@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>heart pop!</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --accent:#ff4d6d;
+      --msg-bg: rgba(255,255,255,0.95);
+    }
+
+    html,body {
+      height:100%;
+      margin:0;
+      -webkit-user-select:none;
+      user-select:none;
+      touch-action: manipulation;
+    }
+
+    body {
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fbc2eb, #a18cd1);
+      background-size:400% 400%;
+      animation: gradientBG 10s ease infinite;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      overflow:hidden;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position:0% 50%; }
+      50% { background-position:100% 50%; }
+      100% { background-position:0% 50%; }
+    }
+
+    h1 {
+      width:100%;
+      text-align:center;
+      margin:22px 0 12px;
+      color:white;
+      font-size:20px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      pointer-events: none; /* don't block touches */
+      z-index: 1;
+    }
+
+    /* heart style */
+    .heart {
+      position:absolute;
+      bottom: -80px;             /* start just off-screen at bottom */
+      pointer-events: auto;      /* allow touches */
+      touch-action: none;        /* let pointer events fire immediately */
+      -webkit-tap-highlight-color: transparent;
+      font-size: 40px;
+      user-select: none;
+      z-index: 5;
+      will-change: transform, opacity, left;
+      animation-name: floatUp;
+      animation-timing-function: linear;
+      animation-fill-mode: forwards;
+    }
+
+    @keyframes floatUp {
+      from { transform: translateY(0); opacity: 1; }
+      to   { transform: translateY(-120vh); opacity: 0; }
+    }
+
+    /* popped message */
+    .pop-message {
+      position: absolute;
+      background: var(--msg-bg);
+      color: var(--accent);
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      transform: translate(-50%, -50%);
+      pointer-events: none;   /* don't block touches */
+      z-index: 10;
+      animation: popMsg 1.4s ease forwards;
+      max-width: 80vw;
+      text-align:center;
+    }
+
+    @keyframes popMsg {
+      0%   { opacity: 1; transform: translate(-50%, -50%) translateY(0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -50%) translateY(-36px) scale(0.98); }
+    }
+
+    /* responsive tweak so hearts aren't huge on small phones */
+    @media (max-width:420px) {
+      .heart { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Tap the hearts to pop them 💖</h1>
+
+  <script>
+    const messages = [
+      "You're amazing 💕",
+      "I’m so lucky to have you 🌸",
+      "You make me so happy 😊",
+      "I love you ❤️",
+      "You're beautiful ✨",
+      ];
+
+    // create a heart that floats up from bottom
+    function createHeart() {
+      const heart = document.createElement('div');
+      heart.className = 'heart';
+      heart.textContent = '💖';
+
+      // random horizontal start (keep heart fully on-screen)
+      const size = (window.innerWidth < 420) ? 34 : 44;
+      const left = Math.random() * (window.innerWidth - size) + (size/2);
+      heart.style.left = left + 'px';
+
+      // randomize size a bit
+      const scale = 0.8 + Math.random() * 0.9;
+      heart.style.fontSize = (size * scale) + 'px';
+
+      // randomize float duration so they don't all move in sync
+      const dur = 5 + Math.random() * 4; // seconds
+      heart.style.animationDuration = dur + 's';
+
+      // pointerdown works for both touch and mouse
+      heart.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); // avoid synthetic mouse event after touch
+        popHeart(heart);
+      }, {passive: false});
+
+      // remove when animation ends (if not popped earlier)
+      heart.addEventListener('animationend', () => {
+        if (heart.parentNode) heart.remove();
+      });
+
+      document.body.appendChild(heart);
+    }
+
+    // handle popping a heart
+    function popHeart(heartEl) {
+      if (!heartEl || !heartEl.parentNode) return;
+
+      // get heart position (center)
+      const rect = heartEl.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      // create message box at that location
+      const msg = document.createElement('div');
+      msg.className = 'pop-message';
+      msg.textContent = messages[Math.floor(Math.random() * messages.length)];
+      msg.style.left = centerX + 'px';
+      msg.style.top = centerY + 'px';
+
+      document.body.appendChild(msg);
+
+      // remove heart quickly with a tiny pop animation
+      heartEl.style.transition = 'transform 120ms ease, opacity 140ms ease';
+      heartEl.style.transform = 'scale(0.05)';
+      heartEl.style.opacity = '0';
+
+      // cleanup popped heart
+      setTimeout(() => { if (heartEl.parentNode) heartEl.remove(); }, 160);
+
+      // remove message after it finishes its pop animation
+      setTimeout(() => { if (msg.parentNode) msg.remove(); }, 1400);
+    }
+
+    // spawn hearts periodically
+    const spawnInterval = 900; // ms
+    const spawner = setInterval(createHeart, spawnInterval);
+
+    // keep hearts flow responsive to orientation/resize
+    window.addEventListener('resize', () => {
+      // nothing to do here for now; hearts use vw positions on creation
+    });
+
+    // quick immediate spawn so first heart appears right away
+    for (let i=0; i<2; i++) setTimeout(createHeart, i*240);
+  </script>
+</body>
+</html>
